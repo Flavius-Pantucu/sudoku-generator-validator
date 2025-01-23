@@ -1,4 +1,5 @@
-const CLUES = 17;
+//EVIL - 20
+const CLUES = 23;
 const SQUARE_SIZE = 3;
 const PUZZLE_SIZE = 9;
 const NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -63,31 +64,43 @@ const checkSolution = (grid) => {
   return solutionCount === 1;
 };
 
-const removeNumbers = (solution, clues) => {
-  const grid = JSON.parse(JSON.stringify(solution));
-  const cells = [];
-  for (var i = 0; i < PUZZLE_SIZE; i++)
-    for (var j = 0; j < PUZZLE_SIZE; j++) cells.push([i, j]);
+const removeNumber = (grid, clues, targetClues) => {
+  const remainingClues = grid.flat().filter((num) => num !== 0).length;
+  if (remainingClues == targetClues) return true;
 
-  cells.sort(() => Math.random() - 0.5);
+  let nonEmptyCells = [];
+  for (var row = 0; row < PUZZLE_SIZE; row++)
+    for (var col = 0; col < PUZZLE_SIZE; col++)
+      if (grid[row][col] !== 0) nonEmptyCells.push([row, col]);
 
-  while (cells.length > clues) {
-    const [row, col] = cells.pop();
-    const num = grid[row][col];
+  nonEmptyCells = nonEmptyCells
+    .map((value) => ({ value, sort: Math.random() }))
+    .sort((a, b) => a.sort - b.sort)
+    .map(({ value }) => value);
+
+  for (const [row, col] of nonEmptyCells) {
+    const backup = grid[row][col];
     grid[row][col] = 0;
 
-    if (!checkSolution(grid)) grid[row][col] = num;
+    if (checkSolution(grid))
+      if (removeNumber(grid, clues - 1, targetClues)) return true;
+
+    grid[row][col] = backup;
   }
 
-  return grid;
+  return false;
 };
 
 const generateSudoku = () => {
-  const grid = Array.from({ length: 9 }, () => Array(9).fill(0));
+  const solution = Array.from({ length: 9 }, () => Array(9).fill(0));
 
-  fillGrid(grid);
+  fillGrid(solution);
 
-  return grid;
+  const puzzle = JSON.parse(JSON.stringify(solution));
+
+  removeNumber(puzzle, 81, CLUES);
+
+  return [solution, puzzle];
 };
 
 const displayGrid = (grid) => {
@@ -96,7 +109,6 @@ const displayGrid = (grid) => {
   });
 };
 
-const solution = generateSudoku();
-const puzzle = removeNumbers(solution, CLUES);
+const [solution, puzzle] = generateSudoku();
 displayGrid(solution);
 displayGrid(puzzle);
